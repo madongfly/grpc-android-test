@@ -19,7 +19,6 @@ public class TesterActivity extends ActionBarActivity {
     private List<Button> mButtons;
     private EditText mHostEdit;
     private EditText mPortEdit;
-    private EditText mMessageEdit;
     private TextView mResultText;
 
     @Override
@@ -35,7 +34,6 @@ public class TesterActivity extends ActionBarActivity {
 
         mHostEdit = (EditText) findViewById(R.id.host_edit_text);
         mPortEdit = (EditText) findViewById(R.id.port_edit_text);
-        mMessageEdit = (EditText) findViewById(R.id.message_edit_text);
         mResultText = (TextView) findViewById(R.id.grpc_response_text);
     }
 

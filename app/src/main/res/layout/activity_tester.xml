@@ -28,14 +28,6 @@
         />
   </LinearLayout>
 
-
-  <EditText
-      android:id="@+id/message_edit_text"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:hint="Enter message to send"
-      />
-
   <Button
       android:id="@+id/empty_unary_button"
       android:layout_width="match_parent"
