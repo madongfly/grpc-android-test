@@ -1,11 +1,17 @@
 package io.grpc.android.integrationtest;
 
+import android.support.annotation.Nullable;
 import com.google.protobuf.nano.MessageNano;
 import io.grpc.ChannelImpl;
-import io.grpc.stub.StreamRecorder;
 import io.grpc.transport.okhttp.OkHttpChannelBuilder;
-import java.util.Arrays;
-import java.util.List;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
+import javax.security.auth.x500.X500Principal;
 import junit.framework.Assert;
 
 public final class IntegrationTester {
@@ -14,8 +20,23 @@ public final class IntegrationTester {
   private TestServiceGrpc.TestServiceBlockingStub blockingStub;
   protected TestServiceGrpc.TestService asyncStub;
 
-  public void init(String host, int port) {
-    channel = OkHttpChannelBuilder.forAddress(host, port).build();
+  private String serverHostOverride = "foo.test.google.fr";
+  private boolean useTls = true;
+
+  public void init(String host, int port, @Nullable InputStream testCa) {
+    OkHttpChannelBuilder channelBuilder = OkHttpChannelBuilder.forAddress(host, port);
+    if (serverHostOverride != null) {
+      // Force the hostname to match the cert the server uses.
+      channelBuilder.overrideHostForAuthority(serverHostOverride);
+    }
+    if (useTls) {
+      try {
+        channelBuilder.sslSocketFactory(getSslSocketFactory(testCa));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+    channel = channelBuilder.build();
     blockingStub = TestServiceGrpc.newBlockingStub(channel);
     asyncStub = TestServiceGrpc.newStub(channel);
   }
@@ -98,17 +119,8 @@ public final class IntegrationTester {
   //}
 
   public static void assertEquals(MessageNano expected, MessageNano actual) {
-    if (expected == null || actual == null) {
-      Assert.assertEquals(expected, actual);
-    } else {
-      if (!expected.equals(actual)) {
-        // This assertEquals should always complete.
-        Assert.assertEquals(expected.toString(), actual.toString());
-        // But if it doesn't, then this should.
-        Assert.assertEquals(expected, actual);
-        Assert.fail("Messages not equal, but assertEquals didn't throw");
-      }
-    }
+    Assert.assertTrue("expected: <" + expected + "> but was <" + actual + ">",
+        MessageNano.messageNanoEquals(expected, actual));
   }
 
   //private static void assertSuccess(StreamRecorder<?> recorder) {
@@ -128,5 +140,48 @@ public final class IntegrationTester {
   //      assertEquals(expected.get(i), actual.get(i));
   //    }
   //  }
+  //}
+
+  private SSLSocketFactory getSslSocketFactory(@Nullable InputStream testCa) throws Exception {
+    if (testCa == null) {
+      return (SSLSocketFactory) SSLSocketFactory.getDefault();
+    }
+
+    KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+    ks.load(null);
+    CertificateFactory cf = CertificateFactory.getInstance("X.509");
+    X509Certificate cert = (X509Certificate) cf.generateCertificate(testCa);
+    X500Principal principal = cert.getSubjectX500Principal();
+    ks.setCertificateEntry(principal.getName("RFC2253"), cert);
+    // Set up trust manager factory to use our key store.
+    TrustManagerFactory trustManagerFactory =
+        TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+    trustManagerFactory.init(ks);
+    SSLContext context = SSLContext.getInstance("TLS");
+    context.init(null, trustManagerFactory.getTrustManagers(), null);
+    return context.getSocketFactory();
+  }
+
+  //private SSLCertificateSocketFactory getSslSocketFactory() throws Exception {
+  //  SSLCertificateSocketFactory factory = (SSLCertificateSocketFactory)
+  //      SSLCertificateSocketFactory.getDefault(5000 /* Timeout in ms*/);
+  //  // Use HTTP/2.0 Draft 15
+  //  byte[] h215 = "h2-15".getBytes();
+  //  byte[][] protocols = new byte[][]{h215};
+  //  //Method setAlpnProtocols =
+  //  //    factory.getClass().getDeclaredMethod("setAlpnProtocols", byte[][].class);
+  //  //setAlpnProtocols.invoke(factory, new Object[] { protocols });
+  //  Method setNpnProtocols =
+  //      factory.getClass().getDeclaredMethod("setNpnProtocols", byte[][].class);
+  //  setNpnProtocols.invoke(factory, new Object[]{protocols});
+  //
+  //  if (useTestCa) {
+  //    if (TMS == null) {
+  //      throw new IllegalStateException("Failed installing test certificate!");
+  //    }
+  //    factory.setTrustManagers(TMS);
+  //  }
+  //
+  //  return factory;
   //}
 }
