@@ -1,6 +1,5 @@
 package io.grpc.android.integrationtest;
 
-import android.support.annotation.Nullable;
 import com.google.protobuf.nano.MessageNano;
 import io.grpc.ChannelImpl;
 import io.grpc.transport.okhttp.OkHttpChannelBuilder;
@@ -10,6 +9,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 import junit.framework.Assert;
@@ -22,8 +22,10 @@ public final class IntegrationTester {
 
   private String serverHostOverride = "foo.test.google.fr";
   private boolean useTls = true;
+  private boolean useTestCa = true;
+  private static TrustManager[] TMS;
 
-  public void init(String host, int port, @Nullable InputStream testCa) {
+  public void init(String host, int port) {
     OkHttpChannelBuilder channelBuilder = OkHttpChannelBuilder.forAddress(host, port);
     if (serverHostOverride != null) {
       // Force the hostname to match the cert the server uses.
@@ -31,7 +33,7 @@ public final class IntegrationTester {
     }
     if (useTls) {
       try {
-        channelBuilder.sslSocketFactory(getSslSocketFactory(testCa));
+        channelBuilder.sslSocketFactory(getSslSocketFactory());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -83,8 +85,8 @@ public final class IntegrationTester {
     final Messages.SimpleResponse goldenResponse = new Messages.SimpleResponse();
     goldenResponse.payload = new Messages.Payload();
     goldenResponse.payload.body = new byte[314159];
-
-    assertEquals(goldenResponse, blockingStub.unaryCall(request));
+    Messages.SimpleResponse response = blockingStub.unaryCall(request);
+    assertEquals(goldenResponse, response);
   }
 
   //public void serverStreaming() throws Exception {
@@ -119,7 +121,7 @@ public final class IntegrationTester {
   //}
 
   public static void assertEquals(MessageNano expected, MessageNano actual) {
-    Assert.assertTrue("expected: <" + expected + "> but was <" + actual + ">",
+    Assert.assertTrue("received message is not expected!",
         MessageNano.messageNanoEquals(expected, actual));
   }
 
@@ -142,24 +144,32 @@ public final class IntegrationTester {
   //  }
   //}
 
-  private SSLSocketFactory getSslSocketFactory(@Nullable InputStream testCa) throws Exception {
-    if (testCa == null) {
+  private SSLSocketFactory getSslSocketFactory() throws Exception {
+    if (!useTestCa) {
       return (SSLSocketFactory) SSLSocketFactory.getDefault();
     }
 
-    KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
-    ks.load(null);
-    CertificateFactory cf = CertificateFactory.getInstance("X.509");
-    X509Certificate cert = (X509Certificate) cf.generateCertificate(testCa);
-    X500Principal principal = cert.getSubjectX500Principal();
-    ks.setCertificateEntry(principal.getName("RFC2253"), cert);
-    // Set up trust manager factory to use our key store.
-    TrustManagerFactory trustManagerFactory =
-        TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-    trustManagerFactory.init(ks);
+
     SSLContext context = SSLContext.getInstance("TLS");
-    context.init(null, trustManagerFactory.getTrustManagers(), null);
+    context.init(null, TMS , null);
     return context.getSocketFactory();
+  }
+
+  public static void initTestCa(InputStream testCa) {
+    try {
+      KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+      ks.load(null);
+      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      X509Certificate cert = (X509Certificate) cf.generateCertificate(testCa);
+      X500Principal principal = cert.getSubjectX500Principal();
+      ks.setCertificateEntry(principal.getName("RFC2253"), cert);
+      // Set up trust manager factory to use our key store.
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init(ks);
+      TMS = trustManagerFactory.getTrustManagers();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   //private SSLCertificateSocketFactory getSslSocketFactory() throws Exception {

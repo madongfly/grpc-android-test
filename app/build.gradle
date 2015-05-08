@@ -1,15 +1,20 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 21
+    compileSdkVersion 22
     buildToolsVersion "21.1.2"
 
     defaultConfig {
         applicationId "io.grpc.android.integrationtest"
         minSdkVersion 14
-        targetSdkVersion 21
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
+
+        testApplicationId "io.grpc.android.integrationtest.test"
+        testInstrumentationRunner "android.test.InstrumentationTestRunner"
+        testHandleProfiling true
+        testFunctionalTest true
     }
     buildTypes {
         release {
@@ -17,19 +22,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
-    testOptions {
-        unitTests.returnDefaultValues = true
-    }
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:21.0.3'
+    compile 'com.android.support:appcompat-v7:22.1.1'
+    compile 'com.google.android.gms:play-services:7.3.0'
     compile 'com.google.code.findbugs:jsr305:3.0.0'
-    compile 'com.squareup.okhttp:okhttp:2.2.0'
     compile 'com.google.guava:guava:18.0'
+    compile 'com.squareup.okhttp:okhttp:2.2.0'
     testCompile 'junit:junit:4.12'
-
     // You need to build the https://github.com/grpc/grpc-java
     // to obtain these libraries below.
     compile 'io.grpc:grpc-core:0.1.0-SNAPSHOT'

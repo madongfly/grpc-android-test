@@ -88,7 +88,7 @@
     <TextView
         android:id="@+id/grpc_response_text"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="wrap_content"
         android:textSize="16dp"
         android:layout_weight="1.0"
         />
