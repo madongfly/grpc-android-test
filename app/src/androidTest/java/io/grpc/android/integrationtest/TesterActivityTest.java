@@ -1,6 +1,9 @@
 package io.grpc.android.integrationtest;
 
+import android.os.Bundle;
 import android.test.ActivityInstrumentationTestCase2;
+import android.test.InstrumentationTestRunner;
+import junit.framework.Assert;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -10,9 +13,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterActivity> {
 
-  String host = "104.155.207.2";
-  int port = 8030;
-  String result;
+  private String host;
+  private int port = 8030;
+  private String result;
 
   public TesterActivityTest() {
     super(TesterActivity.class);
@@ -21,6 +24,10 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
   public void setUp() throws Exception {
     super.setUp();
     getActivity();
+    Bundle args = ((InstrumentationTestRunner) getInstrumentation()).getArguments();
+    host = args.getString("server_host", "");
+    port = Integer.parseInt(args.getString("server_port", "0"));
+    assertTrue("Please specify --server_host and --server_port.", !host.isEmpty() && port != 0);
   }
 
   public void testStartEmptyUnary() throws Exception {
@@ -57,7 +64,7 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
         finished.countDown();
       }
     }).execute();
-    assertTrue("Timeout!", finished.await(10, TimeUnit.SECONDS));
+    assertTrue("Timeout!", finished.await(60, TimeUnit.SECONDS));
     assertEquals(GrpcTestTask.SUCCESS_MESSAGE, result);
   }
 }

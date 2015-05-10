@@ -2,19 +2,17 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 22
-    buildToolsVersion "21.1.2"
+    buildToolsVersion '22.0.1'
 
     defaultConfig {
         applicationId "io.grpc.android.integrationtest"
-        minSdkVersion 14
+        minSdkVersion 18
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
 
         testApplicationId "io.grpc.android.integrationtest.test"
         testInstrumentationRunner "android.test.InstrumentationTestRunner"
-        testHandleProfiling true
-        testFunctionalTest true
     }
     buildTypes {
         release {
