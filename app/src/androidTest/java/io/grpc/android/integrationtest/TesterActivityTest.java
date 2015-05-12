@@ -53,7 +53,7 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
         finished.countDown();
       }
     }).execute();
-    assertTrue("Timeout!", finished.await(60, TimeUnit.SECONDS));
+    assertTrue("Timeout!", finished.await(120, TimeUnit.SECONDS));
     assertEquals(GrpcTestTask.SUCCESS_MESSAGE, result);
   }
 }
