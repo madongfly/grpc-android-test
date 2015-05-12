@@ -75,7 +75,10 @@ public class TesterActivity extends AppCompatActivity
     String host = hostEdit.getText().toString();
     String portStr = portEdit.getText().toString();
     int port = TextUtils.isEmpty(portStr) ? 0 : Integer.valueOf(portStr);
-    new GrpcTestTask(testCase, host, port, new GrpcTestTask.TestListener() {
+
+    // TODO (madongfly) support server_host_override, useTls and useTestCa in the App UI.
+    new GrpcTestTask(testCase, host, port, "foo.test.google.fr", true, true,
+        new GrpcTestTask.TestListener() {
       @Override public void onPreTest() {
         resultText.setText("Testing...");
       }

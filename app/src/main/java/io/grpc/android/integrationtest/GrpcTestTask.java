@@ -1,7 +1,8 @@
 package io.grpc.android.integrationtest;
 
 import android.os.AsyncTask;
-import java.io.InputStream;
+
+import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -16,12 +17,23 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
   private final String host;
   private final int port;
   private final TestListener listener;
+  private final String serverHostOverride;
+  private final boolean useTls;
+  private final boolean useTestCa;
 
   public GrpcTestTask(String testCase,
-      String host, int port, TestListener listener) {
+                      String host,
+                      int port,
+                      @Nullable String serverHostOverride,
+                      boolean useTls,
+                      boolean useTestCa,
+                      TestListener listener) {
     this.testCase = testCase;
     this.host = host;
     this.port = port;
+    this.serverHostOverride = serverHostOverride;
+    this.useTls = useTls;
+    this.useTestCa = useTestCa;
     this.listener = listener;
   }
 
@@ -33,8 +45,7 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
   @Override
   protected String doInBackground(Void... nothing) {
     try {
-      tester = new IntegrationTester();
-      tester.init(host, port);
+      tester = new IntegrationTester(host, port, serverHostOverride, useTls, useTestCa);
       tester.runTest(testCase);
       return SUCCESS_MESSAGE;
     } catch (Exception | AssertionError e) {
@@ -54,6 +65,7 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
 
   public interface TestListener {
     void onPreTest();
+
     void onPostTest(String result);
   }
 }

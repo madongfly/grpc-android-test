@@ -16,6 +16,10 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
   private String host;
   private int port = 8030;
   private String result;
+  private String serverHostOverride;
+  private String testCase;
+  private boolean useTls;
+  private boolean useTestCa;
 
   public TesterActivityTest() {
     super(TesterActivity.class);
@@ -27,33 +31,18 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
     Bundle args = ((InstrumentationTestRunner) getInstrumentation()).getArguments();
     host = args.getString("server_host", "");
     port = Integer.parseInt(args.getString("server_port", "0"));
-    assertTrue("Please specify --server_host and --server_port.", !host.isEmpty() && port != 0);
+    assertTrue("Please specify server_host and server_port.", !host.isEmpty() && port != 0);
+    serverHostOverride = args.getString("server_host_override", null);
+    testCase = args.getString("test_case", "empty_unary");
+    useTls = Boolean.getBoolean(args.getString("use_tls", "true"));
+    useTestCa = Boolean.getBoolean(args.getString("use_test_ca", "false"));
   }
 
-  public void testStartEmptyUnary() throws Exception {
-    startTest("empty_unary");
-  }
-
-  public void testStartLargeUnary() throws Exception {
-    startTest("large_unary");
-  }
-
-  public void testStartClientStreaming() throws Exception {
-
-  }
-
-  public void testStartServerStreaming() throws Exception {
-
-  }
-
-  public void testStartPingPong() throws Exception {
-
-  }
-
-  private void startTest(String testCase) throws Exception {
+  public void testGrpc() throws Exception {
     final CountDownLatch finished = new CountDownLatch(1);
 
-    new GrpcTestTask(testCase, host, port, new GrpcTestTask.TestListener() {
+    new GrpcTestTask(testCase, host, port, serverHostOverride, useTls, useTestCa,
+        new GrpcTestTask.TestListener() {
       @Override
       public void onPreTest() {
       }

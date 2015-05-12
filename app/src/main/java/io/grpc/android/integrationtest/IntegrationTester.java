@@ -1,5 +1,6 @@
 package io.grpc.android.integrationtest;
 
+import android.support.annotation.Nullable;
 import com.google.protobuf.nano.MessageNano;
 import io.grpc.ChannelImpl;
 import io.grpc.transport.okhttp.OkHttpChannelBuilder;
@@ -20,12 +21,13 @@ public final class IntegrationTester {
   private TestServiceGrpc.TestServiceBlockingStub blockingStub;
   protected TestServiceGrpc.TestService asyncStub;
 
-  private String serverHostOverride = "foo.test.google.fr";
-  private boolean useTls = true;
-  private boolean useTestCa = true;
   private static TrustManager[] TMS;
 
-  public void init(String host, int port) {
+  public IntegrationTester(String host,
+                                int port,
+                                @Nullable String serverHostOverride,
+                                boolean useTls,
+                                boolean useTestCa) {
     OkHttpChannelBuilder channelBuilder = OkHttpChannelBuilder.forAddress(host, port);
     if (serverHostOverride != null) {
       // Force the hostname to match the cert the server uses.
@@ -33,7 +35,7 @@ public final class IntegrationTester {
     }
     if (useTls) {
       try {
-        channelBuilder.sslSocketFactory(getSslSocketFactory());
+        channelBuilder.sslSocketFactory(getSslSocketFactory(useTestCa));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -144,7 +146,7 @@ public final class IntegrationTester {
   //  }
   //}
 
-  private SSLSocketFactory getSslSocketFactory() throws Exception {
+  private SSLSocketFactory getSslSocketFactory(boolean useTestCa) throws Exception {
     if (!useTestCa) {
       return (SSLSocketFactory) SSLSocketFactory.getDefault();
     }
