@@ -34,8 +34,8 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
     assertTrue("Please specify server_host and server_port.", !host.isEmpty() && port != 0);
     serverHostOverride = args.getString("server_host_override", null);
     testCase = args.getString("test_case", "empty_unary");
-    useTls = Boolean.getBoolean(args.getString("use_tls", "true"));
-    useTestCa = Boolean.getBoolean(args.getString("use_test_ca", "false"));
+    useTls = Boolean.parseBoolean(args.getString("use_tls", "true"));
+    useTestCa = Boolean.parseBoolean(args.getString("use_test_ca", "false"));
   }
 
   public void testGrpc() throws Exception {
@@ -51,8 +51,7 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
       public void onPostTest(String result) {
         TesterActivityTest.this.result = result;
         finished.countDown();
-      }
-    }).execute();
+      }}).execute();
     assertTrue("Timeout!", finished.await(120, TimeUnit.SECONDS));
     assertEquals(GrpcTestTask.SUCCESS_MESSAGE, result);
   }
