@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # The only argument is the AVD name.
+# Note: This script will hang, you may want to run it in the background.
+
 if [ $# -eq 0 ]
 then
     echo "Please specify the AVD name"
@@ -8,5 +10,4 @@ then
 fi
 
 echo "[INFO] Starting emulator $1"
-emulator64-arm -avd $1 -memory 1024 -netfast -no-skin -no-audio -no-window -port 5554 &
-./wait-for-emulator.sh
+emulator64-arm -avd $1 -memory 1024 -netfast -no-skin -no-audio -no-window -port 5554
