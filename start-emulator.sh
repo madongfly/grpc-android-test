@@ -10,4 +10,4 @@ then
 fi
 
 echo "[INFO] Starting emulator $1"
-emulator64-arm -avd $1 -memory 1024 -netfast -no-skin -no-audio -no-window -port 5554
+emulator64-arm -avd $1 -netfast -no-skin -no-audio -no-window -port 5554
