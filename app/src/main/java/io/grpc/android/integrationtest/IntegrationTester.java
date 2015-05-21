@@ -1,12 +1,21 @@
 package io.grpc.android.integrationtest;
 
+import android.net.SSLCertificateSocketFactory;
 import android.support.annotation.Nullable;
 import com.google.protobuf.nano.MessageNano;
 import io.grpc.ChannelImpl;
 import io.grpc.stub.StreamObserver;
 import io.grpc.stub.StreamRecorder;
 import io.grpc.transport.okhttp.OkHttpChannelBuilder;
+import junit.framework.Assert;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.security.auth.x500.X500Principal;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -14,12 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.security.auth.x500.X500Principal;
-import junit.framework.Assert;
 
 public final class IntegrationTester {
 
@@ -30,10 +33,11 @@ public final class IntegrationTester {
   private static TrustManager[] TMS;
 
   public IntegrationTester(String host,
-                                int port,
-                                @Nullable String serverHostOverride,
-                                boolean useTls,
-                                boolean useTestCa) {
+      int port,
+      @Nullable String serverHostOverride,
+      boolean useTls,
+      boolean useTestCa,
+      @Nullable String tlsHandshake) {
     OkHttpChannelBuilder channelBuilder = OkHttpChannelBuilder.forAddress(host, port);
     if (serverHostOverride != null) {
       // Force the hostname to match the cert the server uses.
@@ -41,7 +45,13 @@ public final class IntegrationTester {
     }
     if (useTls) {
       try {
-        channelBuilder.sslSocketFactory(getSslSocketFactory(useTestCa));
+        SSLSocketFactory factory;
+        if (tlsHandshake != null) {
+          factory = getSslCertificateSocketFactory(useTestCa, tlsHandshake);
+        } else {
+          factory = getSslSocketFactory(useTestCa);
+        }
+        channelBuilder.sslSocketFactory(factory);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -246,6 +256,7 @@ public final class IntegrationTester {
       return (SSLSocketFactory) SSLSocketFactory.getDefault();
     }
 
+    System.err.println("~~~ use upgrader");
     SSLContext context = SSLContext.getInstance("TLS");
     context.init(null, TMS , null);
     return context.getSocketFactory();
@@ -268,26 +279,34 @@ public final class IntegrationTester {
     }
   }
 
-  //private SSLCertificateSocketFactory getSslSocketFactory() throws Exception {
-  //  SSLCertificateSocketFactory factory = (SSLCertificateSocketFactory)
-  //      SSLCertificateSocketFactory.getDefault(5000 /* Timeout in ms*/);
-  //  // Use HTTP/2.0 Draft 15
-  //  byte[] h215 = "h2-15".getBytes();
-  //  byte[][] protocols = new byte[][]{h215};
-  //  //Method setAlpnProtocols =
-  //  //    factory.getClass().getDeclaredMethod("setAlpnProtocols", byte[][].class);
-  //  //setAlpnProtocols.invoke(factory, new Object[] { protocols });
-  //  Method setNpnProtocols =
-  //      factory.getClass().getDeclaredMethod("setNpnProtocols", byte[][].class);
-  //  setNpnProtocols.invoke(factory, new Object[]{protocols});
-  //
-  //  if (useTestCa) {
-  //    if (TMS == null) {
-  //      throw new IllegalStateException("Failed installing test certificate!");
-  //    }
-  //    factory.setTrustManagers(TMS);
-  //  }
-  //
-  //  return factory;
-  //}
+  private SSLCertificateSocketFactory getSslCertificateSocketFactory(
+      boolean useTestCa, String tlsHandshake) throws Exception {
+    SSLCertificateSocketFactory factory = (SSLCertificateSocketFactory)
+        SSLCertificateSocketFactory.getDefault(5000 /* Timeout in ms*/);
+    // Use HTTP/2.0 Draft 15
+    byte[] h215 = "h2-15".getBytes();
+    byte[][] protocols = new byte[][]{h215};
+    if (tlsHandshake.equals("alpn")) {
+      System.err.println("~~~ set alpn");
+      Method setAlpnProtocols =
+          factory.getClass().getDeclaredMethod("setAlpnProtocols", byte[][].class);
+      setAlpnProtocols.invoke(factory, new Object[] { protocols });
+    } else if (tlsHandshake.equals("npn")) {
+      System.err.println("~~~ set npn");
+      Method setNpnProtocols =
+          factory.getClass().getDeclaredMethod("setNpnProtocols", byte[][].class);
+      setNpnProtocols.invoke(factory, new Object[]{protocols});
+    } else {
+      throw new RuntimeException("Unknown protocol for tls handshake: " + tlsHandshake);
+    }
+
+    if (useTestCa) {
+      if (TMS == null) {
+        throw new IllegalStateException("Failed installing test certificate!");
+      }
+      factory.setTrustManagers(TMS);
+    }
+
+    return factory;
+  }
 }

@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.security.ProviderInstaller;
 
 import java.util.LinkedList;
@@ -37,6 +38,8 @@ public class TesterActivity extends AppCompatActivity
     hostEdit = (EditText) findViewById(R.id.host_edit_text);
     portEdit = (EditText) findViewById(R.id.port_edit_text);
     resultText = (TextView) findViewById(R.id.grpc_response_text);
+
+    System.err.println("~~~ gms available: " + GooglePlayServicesUtil.isGooglePlayServicesAvailable(this));
 
     IntegrationTester.initTestCa(getResources().openRawResource(R.raw.ca));
     ProviderInstaller.installIfNeededAsync(this, this);
@@ -77,7 +80,7 @@ public class TesterActivity extends AppCompatActivity
     int port = TextUtils.isEmpty(portStr) ? 0 : Integer.valueOf(portStr);
 
     // TODO (madongfly) support server_host_override, useTls and useTestCa in the App UI.
-    new GrpcTestTask(testCase, host, port, "foo.test.google.fr", true, true,
+    new GrpcTestTask(testCase, host, port, "foo.test.google.fr", true, true, null,
         new GrpcTestTask.TestListener() {
       @Override public void onPreTest() {
         resultText.setText("Testing...");
@@ -93,10 +96,12 @@ public class TesterActivity extends AppCompatActivity
   @Override
   public void onProviderInstalled() {
     // Provider is up-to-date, app can make secure network calls.
+    System.err.println("~~~ Provider installed");
   }
 
   @Override
   public void onProviderInstallFailed(int errorCode, Intent recoveryIntent) {
     // Bet the current security library is up to date or fail.
+    System.err.println("~~~ Provider install failed!!!!");
   }
 }

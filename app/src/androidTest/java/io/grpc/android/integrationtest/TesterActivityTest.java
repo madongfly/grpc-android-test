@@ -3,7 +3,6 @@ package io.grpc.android.integrationtest;
 import android.os.Bundle;
 import android.test.ActivityInstrumentationTestCase2;
 import android.test.InstrumentationTestRunner;
-import junit.framework.Assert;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +19,7 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
   private String testCase;
   private boolean useTls;
   private boolean useTestCa;
+  private String tlsHandshake;
 
   public TesterActivityTest() {
     super(TesterActivity.class);
@@ -36,22 +36,31 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
     testCase = args.getString("test_case", "empty_unary");
     useTls = Boolean.parseBoolean(args.getString("use_tls", "true"));
     useTestCa = Boolean.parseBoolean(args.getString("use_test_ca", "false"));
+    tlsHandshake = args.getString("tls_handshake", null);
   }
 
   public void testGrpc() throws Exception {
     final CountDownLatch finished = new CountDownLatch(1);
 
-    new GrpcTestTask(testCase, host, port, serverHostOverride, useTls, useTestCa,
+    new GrpcTestTask(testCase,
+        host,
+        port,
+        serverHostOverride,
+        useTls,
+        useTestCa,
+        tlsHandshake,
         new GrpcTestTask.TestListener() {
-      @Override
-      public void onPreTest() {
-      }
+          @Override
+          public void onPreTest() {
+          }
 
-      @Override
-      public void onPostTest(String result) {
-        TesterActivityTest.this.result = result;
-        finished.countDown();
-      }}).execute();
+          @Override
+          public void onPostTest(String result) {
+            TesterActivityTest.this.result = result;
+            finished.countDown();
+          }
+        }
+    ).execute();
     assertTrue("Timeout!", finished.await(120, TimeUnit.SECONDS));
     assertEquals(GrpcTestTask.SUCCESS_MESSAGE, result);
   }
