@@ -20,6 +20,7 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
   private String testCase;
   private boolean useTls;
   private boolean useTestCa;
+  private String oauthScope;
 
   public TesterActivityTest() {
     super(TesterActivity.class);
@@ -36,12 +37,13 @@ public class TesterActivityTest extends ActivityInstrumentationTestCase2<TesterA
     testCase = args.getString("test_case", "empty_unary");
     useTls = Boolean.parseBoolean(args.getString("use_tls", "true"));
     useTestCa = Boolean.parseBoolean(args.getString("use_test_ca", "false"));
+    oauthScope = args.getString("oauth_scope", "https://www.googleapis.com/auth/xapi.zoo");
   }
 
   public void testGrpc() throws Exception {
     final CountDownLatch finished = new CountDownLatch(1);
 
-    new GrpcTestTask(testCase, host, port, serverHostOverride, useTls, useTestCa,
+    new GrpcTestTask(testCase, host, port, serverHostOverride, useTls, useTestCa, oauthScope,
         new GrpcTestTask.TestListener() {
       @Override
       public void onPreTest() {

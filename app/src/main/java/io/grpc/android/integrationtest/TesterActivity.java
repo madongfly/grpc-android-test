@@ -12,7 +12,12 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.gms.security.ProviderInstaller;
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -39,6 +44,14 @@ public class TesterActivity extends AppCompatActivity
     resultText = (TextView) findViewById(R.id.grpc_response_text);
 
     IntegrationTester.initTestCa(getResources().openRawResource(R.raw.ca));
+    InputStream credentialsStream = (getResources().openRawResource(R.raw.gce_cred));
+    try {
+      String jsonKey = CharStreams.toString(
+          new InputStreamReader(credentialsStream, Charsets.UTF_8));
+      IntegrationTester.initTestCreds(jsonKey);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     ProviderInstaller.installIfNeededAsync(this, this);
   }
 
@@ -76,8 +89,9 @@ public class TesterActivity extends AppCompatActivity
     String portStr = portEdit.getText().toString();
     int port = TextUtils.isEmpty(portStr) ? 0 : Integer.valueOf(portStr);
 
-    // TODO (madongfly) support server_host_override, useTls and useTestCa in the App UI.
+    // TODO (madongfly) support server_host_override, useTls, useTestCa and oauthScope in the App UI.
     new GrpcTestTask(testCase, host, port, "foo.test.google.fr", true, true,
+        "https://www.googleapis.com/auth/xapi.zoo",
         new GrpcTestTask.TestListener() {
       @Override public void onPreTest() {
         resultText.setText("Testing...");

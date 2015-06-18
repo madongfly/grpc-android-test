@@ -20,6 +20,7 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
   private final String serverHostOverride;
   private final boolean useTls;
   private final boolean useTestCa;
+  private final String oauthScope;
 
   public GrpcTestTask(String testCase,
                       String host,
@@ -27,6 +28,7 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
                       @Nullable String serverHostOverride,
                       boolean useTls,
                       boolean useTestCa,
+                      String oauthScope,
                       TestListener listener) {
     this.testCase = testCase;
     this.host = host;
@@ -34,6 +36,7 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
     this.serverHostOverride = serverHostOverride;
     this.useTls = useTls;
     this.useTestCa = useTestCa;
+    this.oauthScope = oauthScope;
     this.listener = listener;
   }
 
@@ -45,7 +48,7 @@ public class GrpcTestTask extends AsyncTask<Void, Void, String> {
   @Override
   protected String doInBackground(Void... nothing) {
     try {
-      tester = new IntegrationTester(host, port, serverHostOverride, useTls, useTestCa);
+      tester = new IntegrationTester(host, port, serverHostOverride, useTls, useTestCa, oauthScope);
       tester.runTest(testCase);
       return SUCCESS_MESSAGE;
     } catch (Exception | AssertionError e) {
