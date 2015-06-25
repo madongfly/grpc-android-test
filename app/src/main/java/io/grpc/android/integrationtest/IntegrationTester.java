@@ -283,9 +283,9 @@ public final class IntegrationTester {
       boolean useTestCa, String tlsHandshake) throws Exception {
     SSLCertificateSocketFactory factory = (SSLCertificateSocketFactory)
         SSLCertificateSocketFactory.getDefault(5000 /* Timeout in ms*/);
-    // Use HTTP/2.0 Draft 15
-    byte[] h215 = "h2-15".getBytes();
-    byte[][] protocols = new byte[][]{h215};
+    // Use HTTP/2.0
+    byte[] h2 = "h2".getBytes();
+    byte[][] protocols = new byte[][]{h2};
     if (tlsHandshake.equals("alpn")) {
       System.err.println("~~~ set alpn");
       Method setAlpnProtocols =
