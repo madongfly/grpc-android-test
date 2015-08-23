@@ -1,23 +1,56 @@
+/*
+ * Copyright 2015, Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *    * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *    * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *
+ *    * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package io.grpc.android.integrationtest;
+
+import com.google.android.gms.security.ProviderInstaller;
 
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.google.android.gms.security.ProviderInstaller;
-
 import java.util.LinkedList;
 import java.util.List;
 
 public class TesterActivity extends AppCompatActivity
     implements ProviderInstaller.ProviderInstallListener {
+  final static String LOG_TAG = "GrpcTest";
   private List<Button> buttons;
   private EditText hostEdit;
   private EditText portEdit;
@@ -38,8 +71,9 @@ public class TesterActivity extends AppCompatActivity
     portEdit = (EditText) findViewById(R.id.port_edit_text);
     resultText = (TextView) findViewById(R.id.grpc_response_text);
 
-    IntegrationTester.initTestCa(getResources().openRawResource(R.raw.ca));
     ProviderInstaller.installIfNeededAsync(this, this);
+    // Disable buttons until the security provider installing finishes.
+    enableButtons(false);
   }
 
   public void startEmptyUnary(View view) {
@@ -74,11 +108,12 @@ public class TesterActivity extends AppCompatActivity
     enableButtons(false);
     String host = hostEdit.getText().toString();
     String portStr = portEdit.getText().toString();
-    int port = TextUtils.isEmpty(portStr) ? 0 : Integer.valueOf(portStr);
+    int port = TextUtils.isEmpty(portStr) ? 8080 : Integer.valueOf(portStr);
 
     // TODO (madongfly) support server_host_override, useTls and useTestCa in the App UI.
-    new GrpcTestTask(testCase, host, port, "foo.test.google.fr", true, true,
-        new GrpcTestTask.TestListener() {
+    new InteropTester(testCase, host, port, "foo.test.google.fr", true,
+        getResources().openRawResource(R.raw.ca), null,
+        new InteropTester.TestListener() {
       @Override public void onPreTest() {
         resultText.setText("Testing...");
       }
@@ -93,10 +128,14 @@ public class TesterActivity extends AppCompatActivity
   @Override
   public void onProviderInstalled() {
     // Provider is up-to-date, app can make secure network calls.
+    enableButtons(true);
   }
 
   @Override
   public void onProviderInstallFailed(int errorCode, Intent recoveryIntent) {
-    // Bet the current security library is up to date or fail.
+    // The provider is helpful, but it is possible to succeed without it.
+    // Hope that the system-provided libraries are new enough.
+    Log.w(LOG_TAG, "Failed installing security provider, error code: " + errorCode);
+    enableButtons(true);
   }
 }

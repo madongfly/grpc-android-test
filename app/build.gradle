@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.protobuf'
 
 android {
     compileSdkVersion 22
@@ -6,21 +7,54 @@ android {
 
     defaultConfig {
         applicationId "io.grpc.android.integrationtest"
-        minSdkVersion 18
+        minSdkVersion 9
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
-
-        testApplicationId "io.grpc.android.integrationtest.test"
-        testInstrumentationRunner "android.test.InstrumentationTestRunner"
     }
     buildTypes {
+        debug {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    lintOptions {
+        disable 'InvalidPackage', 'HardcodedText'
+    }
 }
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.0.0-alpha-2'
+    }
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:0.9.0-SNAPSHOT'
+        }
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                javanano {
+                    // Options added to --javanano_out
+                    option 'ignore_services=true'
+                }
+            }
+
+            task.plugins {
+                grpc {
+                    // Options added to --grpc_out
+                    option 'nano=true'
+                }
+            }
+        }
+    }
+}
+
 
 dependencies {
     compile 'com.android.support:appcompat-v7:22.1.1'
@@ -29,10 +63,10 @@ dependencies {
     compile 'com.google.guava:guava:18.0'
     compile 'com.squareup.okhttp:okhttp:2.2.0'
     testCompile 'junit:junit:4.12'
-    // You need to build the https://github.com/grpc/grpc-java
-    // to obtain these libraries below.
-    compile 'io.grpc:grpc-core:0.8.0-SNAPSHOT'
-    compile 'io.grpc:grpc-protobuf-nano:0.8.0-SNAPSHOT'
-    compile 'io.grpc:grpc-okhttp:0.8.0-SNAPSHOT'
-    compile 'io.grpc:grpc-stub:0.8.0-SNAPSHOT'
+    // You need to build grpc-java to obtain these libraries below.
+    compile 'io.grpc:grpc-core:0.9.0-SNAPSHOT'
+    compile 'io.grpc:grpc-protobuf-nano:0.9.0-SNAPSHOT'
+    compile 'io.grpc:grpc-okhttp:0.9.0-SNAPSHOT'
+    compile 'io.grpc:grpc-stub:0.9.0-SNAPSHOT'
+    compile 'javax.annotation:javax.annotation-api:1.2'
 }
